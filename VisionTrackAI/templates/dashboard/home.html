@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - VisionTrackAI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}Home / Dashboard{% endblock %}
+
+{% block content %}
+<!-- Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon green"><i class="bi bi-hdd-network-fill"></i></div>
+            <div class="metric-value glow-green">{{ total_nodes }}</div>
+            <div class="metric-label">Total Nodes</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon green"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="metric-value" style="color:var(--accent-green);">{{ online_nodes }}</div>
+            <div class="metric-label">Online Nodes</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon red"><i class="bi bi-x-circle-fill"></i></div>
+            <div class="metric-value" style="color:var(--accent-red);">{{ offline_nodes }}</div>
+            <div class="metric-label">Offline Nodes</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="metric-value" style="color:var(--accent-amber);">{{ error_nodes }}</div>
+            <div class="metric-label">Error Nodes</div>
+        </div>
+    </div>
+</div>
+
+<!-- DB Metrics -->
+{% if metrics %}
+<div class="row g-3 mb-4">
+    {% for m in metrics %}
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon {% cycle 'blue' 'purple' 'green' 'amber' %}">
+                <i class="bi bi-{{ m.icon }}"></i>
+            </div>
+            <div class="metric-value">{{ m.value }}{% if m.unit %}<small
+                    style="font-size:14px;color:var(--text-muted);"> {{ m.unit }}</small>{% endif %}</div>
+            <div class="metric-label">{{ m.name }}</div>
+            {% if m.change_percent %}
+            <div class="metric-change {% if m.is_positive %}positive{% else %}negative{% endif %}">
+                <i class="bi bi-arrow-{% if m.is_positive %}up{% else %}down{% endif %}"></i> {{ m.change_percent }}%
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- Alerts -->
+    <div class="col-lg-5">
+        <div class="vt-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0"><i class="bi bi-bell-fill text-amber me-2"></i>Active Alerts</h6>
+                <span class="badge-status badge-warning">{{ alerts|length }}</span>
+            </div>
+            {% for alert in alerts %}
+            <div class="alert-item {{ alert.severity }}">
+                <div>
+                    {% if alert.severity == 'critical' %}<i class="bi bi-x-octagon-fill text-red"></i>
+                    {% elif alert.severity == 'warning' %}<i class="bi bi-exclamation-triangle-fill text-amber"></i>
+                    {% else %}<i class="bi bi-info-circle-fill text-blue"></i>{% endif %}
+                </div>
+                <div>
+                    <div style="font-weight:500;color:var(--text-primary);font-size:14px;">{{ alert.title }}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">{{ alert.message|truncatewords:15 }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ alert.created_at|timesince }}
+                        ago · {{ alert.source }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state py-4"><i class="bi bi-check-circle"></i>
+                <h6 class="text-secondary">No active alerts</h6>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Node Overview Table -->
+    <div class="col-lg-7">
+        <div class="vt-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0"><i class="bi bi-hdd-network me-2"></i>Node Overview</h6>
+                <a href="{% url 'nodes:node_list' %}" class="text-blue" style="font-size:13px;">View All →</a>
+            </div>
+            <table class="vt-table">
+                <thead>
+                    <tr>
+                        <th>Node</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for node in nodes %}
+                    <tr style="cursor:pointer;" onclick="location.href='{% url 'nodes:node_detail' node.pk %}'">
+                        <td style="color:var(--text-primary);font-weight:500;">
+                            <span class="status-dot {{ node.status }}"></span>{{ node.name }}
+                        </td>
+                        <td>{{ node.location }}</td>
+                        <td><span class="badge-status badge-{{ node.status }}">{{ node.get_status_display }}</span></td>
+                        <td>
+                            <div class="vt-progress" style="width:60px;">
+                                <div class="vt-progress-bar {% if node.cpu_usage > 80 %}red{% elif node.cpu_usage > 60 %}amber{% else %}green{% endif %}"
+                                    style="width:{{ node.cpu_usage }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ node.cpu_usage }}%</small>
+                        </td>
+                        <td>
+                            <div class="vt-progress" style="width:60px;">
+                                <div class="vt-progress-bar {% if node.memory_usage > 80 %}red{% elif node.memory_usage > 60 %}amber{% else %}green{% endif %}"
+                                    style="width:{{ node.memory_usage }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ node.memory_usage }}%</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No nodes configured. Add nodes via Admin
+                            panel.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

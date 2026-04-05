@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Training Logs - {{ job.name }} - VisionTrackAI{% endblock %}
+{% block page_title %}{{ job.name }} - Logs{% endblock %}
+{% block breadcrumb %}Home / AI Studio / {{ job.name }} / Logs{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-blue">{{ job.model_type }}</div>
+            <div class="metric-label">Model</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ job.current_epoch }}/{{ job.epochs }}</div>
+            <div class="metric-label">Epochs</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-green">{{ job.accuracy|floatformat:2 }}%</div>
+            <div class="metric-label">Accuracy</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-amber">{{ job.loss|floatformat:4 }}</div>
+            <div class="metric-label">Loss</div>
+        </div>
+    </div>
+</div>
+
+<div class="vt-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0"><i class="bi bi-terminal me-2"></i>Training Logs</h6>
+        <form method="GET" class="d-flex gap-2">
+            <select name="level" class="vt-select" style="width:auto;" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="debug">Debug</option>
+            </select>
+        </form>
+    </div>
+    <div
+        style="background:var(--bg-primary);border-radius:8px;max-height:500px;overflow-y:auto;font-family:'Fira Code',monospace;">
+        {% for log in logs %}
+        <div class="log-entry {{ log.level }}">
+            <span class="log-time">{{ log.timestamp|date:"H:i:s.u" }}</span>
+            <span class="log-level">{{ log.level }}</span>
+            {% if log.epoch %}<span style="color:var(--accent-purple);">[Epoch {{ log.epoch }}]</span> {% endif %}
+            {{ log.message }}
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">No logs available.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

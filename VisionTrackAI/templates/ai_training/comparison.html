@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Hyperparameter Comparison - VisionTrackAI{% endblock %}
+{% block page_title %}Hyperparameter Comparison{% endblock %}
+{% block breadcrumb %}Home / AI Studio / Comparison{% endblock %}
+
+{% block content %}
+<div class="vt-card mb-4">
+    <h6 class="mb-3">Select Jobs to Compare</h6>
+    <form method="GET" class="d-flex gap-3 flex-wrap align-items-end">
+        {% for job in jobs %}
+        <label class="d-flex align-items-center gap-2"
+            style="cursor:pointer;padding:8px 16px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;">
+            <input type="checkbox" name="jobs" value="{{ job.pk }}">
+            <span style="color:var(--text-primary);font-size:13px;">{{ job.name }}</span>
+        </label>
+        {% endfor %}
+        <button type="submit" class="btn-vt btn-vt-primary"><i class="bi bi-columns-gap"></i> Compare</button>
+    </form>
+</div>
+
+{% if selected_jobs %}
+<div class="vt-card mb-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h6 class="mb-0">Comparison Results</h6>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="title" value="Comparison {{ selected_jobs|length }} jobs">
+            {% for j in selected_jobs %}<input type="hidden" name="jobs" value="{{ j.pk }}">{% endfor %}
+            <button type="submit" class="btn-vt btn-vt-secondary btn-sm"><i class="bi bi-floppy"></i> Save</button>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="vt-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    {% for j in selected_jobs %}<th>{{ j.name }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-muted">Model</td>{% for j in selected_jobs %}<td>{{ j.model_type }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Dataset</td>{% for j in selected_jobs %}<td>{{ j.dataset|default:"-" }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Epochs</td>{% for j in selected_jobs %}<td>{{ j.epochs }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Accuracy</td>{% for j in selected_jobs %}<td class="text-green">{{
+                        j.accuracy|floatformat:2 }}%</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Loss</td>{% for j in selected_jobs %}<td class="text-amber">{{
+                        j.loss|floatformat:4 }}</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Training Time</td>{% for j in selected_jobs %}<td>{{
+                        j.training_time|floatformat:1 }}s</td>{% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted">Status</td>{% for j in selected_jobs %}<td><span
+                            class="badge-status badge-online">{{ j.get_status_display }}</span></td>{% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

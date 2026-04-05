@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Live Stream - VisionTrackAI{% endblock %}
+{% block page_title %}Live Stream{% endblock %}
+{% block breadcrumb %}Home / Live Stream{% endblock %}
+
+{% block topbar_actions %}
+<div class="d-flex align-items-center gap-2">
+    <button class="btn-vt btn-vt-secondary btn-layout active" data-cols="2" title="2×2 Grid">
+        <i class="bi bi-grid-fill"></i>
+    </button>
+    <button class="btn-vt btn-vt-secondary btn-layout" data-cols="3" title="3×3 Grid">
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+    </button>
+    <button class="btn-vt btn-vt-secondary btn-layout" data-cols="1" title="Single View">
+        <i class="bi bi-square"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stream Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon blue"><i class="bi bi-camera-video-fill"></i></div>
+            <div class="metric-value">{{ total_cameras }}</div>
+            <div class="metric-label">Total Cameras</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon green"><i class="bi bi-broadcast"></i></div>
+            <div class="metric-value glow-green">{{ online_cameras }}</div>
+            <div class="metric-label">Live Feeds</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon red"><i class="bi bi-camera-video-off-fill"></i></div>
+            <div class="metric-value" style="color:var(--accent-red);">{{ offline_cameras }}</div>
+            <div class="metric-label">Offline Feeds</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon purple"><i class="bi bi-cpu"></i></div>
+            <div class="metric-value" style="color:var(--accent-purple);">AI</div>
+            <div class="metric-label">Detection Active</div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Grid -->
+<div class="stream-grid cols-2" id="streamGrid">
+    {% for node in nodes %}
+    <div class="stream-card" data-status="{{ node.status }}">
+        <!-- Viewport - clickable to per-node stream -->
+        <a href="{% url 'dashboard:node_livestream' node.pk %}" class="stream-viewport-link">
+            <div class="stream-viewport">
+                {% if node.status == 'online' %}
+                <!-- Simulated live feed -->
+                <div class="stream-feed-sim">
+                    <div class="scan-line"></div>
+                    <div class="noise-overlay"></div>
+                    <!-- AI Detection Overlay -->
+                    <div class="detection-overlay">
+                        <div class="det-box box-vehicle" style="top:30%;left:20%;width:25%;height:35%;">
+                            <span class="det-label">Car 94%</span>
+                        </div>
+                        <div class="det-box box-vehicle" style="top:25%;left:55%;width:20%;height:30%;">
+                            <span class="det-label">Truck 87%</span>
+                        </div>
+                        <div class="det-box box-person" style="top:50%;left:75%;width:10%;height:25%;">
+                            <span class="det-label">Person 91%</span>
+                        </div>
+                    </div>
+                    <!-- Timestamp overlay -->
+                    <div class="stream-timestamp">
+                        <i class="bi bi-record-circle-fill text-red"></i>
+                        <span class="stream-time-text">LIVE</span>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Offline feed -->
+                <div class="stream-offline">
+                    <i class="bi bi-camera-video-off"></i>
+                    <span>Feed Unavailable</span>
+                </div>
+                {% endif %}
+            </div>
+        </a>
+
+        <!-- Info Bar -->
+        <div class="stream-info">
+            <div class="stream-info-left">
+                <span class="status-dot {{ node.status }}"></span>
+                <div>
+                    <div class="stream-name">{{ node.name }}</div>
+                    <div class="stream-location"><i class="bi bi-geo-alt"></i> {{ node.location }}</div>
+                </div>
+            </div>
+            <div class="stream-info-right">
+                {% if node.status == 'online' %}
+                <span class="stream-stat"><i class="bi bi-speedometer2"></i> {{ node.cpu_usage }}%</span>
+                {% endif %}
+                <a href="{% url 'dashboard:node_livestream' node.pk %}" class="stream-btn" title="View Stream">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+                <button class="stream-btn" title="Fullscreen" onclick="event.stopPropagation(); toggleFullscreen(this)">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="stream-empty-state">
+        <div class="empty-state">
+            <i class="bi bi-camera-video-off"></i>
+            <h5>No cameras available</h5>
+            <p>Add edge nodes via the <a href="{% url 'nodes:node_list' %}">Nodes</a> page to view live streams.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Layout switching
+    document.querySelectorAll('.btn-layout').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.btn-layout').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const grid = document.getElementById('streamGrid');
+            grid.className = 'stream-grid cols-' + btn.dataset.cols;
+        });
+    });
+
+    // Fullscreen toggle
+    function toggleFullscreen(button) {
+        const card = button.closest('.stream-card');
+        if (card.classList.contains('stream-fullscreen')) {
+            card.classList.remove('stream-fullscreen');
+            document.body.style.overflow = '';
+        } else {
+            document.querySelectorAll('.stream-fullscreen').forEach(c => c.classList.remove('stream-fullscreen'));
+            card.classList.add('stream-fullscreen');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.stream-fullscreen').forEach(c => c.classList.remove('stream-fullscreen'));
+            document.body.style.overflow = '';
+        }
+    });
+
+    // Animate timestamp
+    function updateTimestamps() {
+        document.querySelectorAll('.stream-time-text').forEach(el => {
+            const d = new Date();
+            el.textContent = 'LIVE · ' + d.toLocaleTimeString();
+        });
+    }
+    setInterval(updateTimestamps, 1000);
+    updateTimestamps();
+
+    // Randomize bounding box positions subtly for realism
+    function animateDetections() {
+        document.querySelectorAll('.det-box').forEach(box => {
+            const jitterX = (Math.random() - 0.5) * 2;
+            const jitterY = (Math.random() - 0.5) * 2;
+            box.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+        });
+    }
+    setInterval(animateDetections, 150);
+</script>
+{% endblock %}

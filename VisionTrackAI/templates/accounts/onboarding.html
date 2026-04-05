@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Onboarding - VisionTrackAI{% endblock %}
+{% block page_title %}Onboarding Tour{% endblock %}
+{% block breadcrumb %}Home / Onboarding / Step {{ step }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="vt-card text-center py-5">
+            <!-- Step Indicators -->
+            <div class="d-flex justify-content-center gap-3 mb-5">
+                {% for s in "1234" %}
+                <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;
+          {% if forloop.counter < step %}background:var(--accent-green);color:#fff;
+          {% elif forloop.counter == step %}background:var(--accent-blue);color:#fff;
+          {% else %}background:var(--border-color);color:var(--text-muted);{% endif %}">
+                    {% if forloop.counter < step %}<i class="bi bi-check"></i>{% else %}{{ forloop.counter }}{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if step == 1 %}
+            <i class="bi bi-grid-1x2-fill mb-3" style="font-size:56px;color:var(--accent-green);"></i>
+            <h3 class="mb-3">Welcome to VisionTrackAI</h3>
+            <p class="text-secondary mb-4" style="max-width:500px;margin:0 auto;">Your intelligent IoT monitoring
+                platform. Let's take a quick tour of the key features.</p>
+            {% elif step == 2 %}
+            <i class="bi bi-hdd-network-fill mb-3" style="font-size:56px;color:var(--accent-blue);"></i>
+            <h3 class="mb-3">Edge Node Health Monitoring</h3>
+            <p class="text-secondary mb-4" style="max-width:500px;margin:0 auto;">Monitor all your edge nodes in
+                real-time. Track CPU, memory, disk usage, and get instant alerts when nodes go offline.</p>
+            {% elif step == 3 %}
+            <i class="bi bi-geo-alt-fill mb-3" style="font-size:56px;color:var(--accent-amber);"></i>
+            <h3 class="mb-3">Geospatial Tracking</h3>
+            <p class="text-secondary mb-4" style="max-width:500px;margin:0 auto;">View all your nodes and vehicle
+                detections on an interactive map. Track movements and identify patterns in real-time.</p>
+            {% elif step == 4 %}
+            <i class="bi bi-car-front-fill mb-3" style="font-size:56px;color:var(--accent-purple);"></i>
+            <h3 class="mb-3">Vehicle Search & Re-ID</h3>
+            <p class="text-secondary mb-4" style="max-width:500px;margin:0 auto;">Search vehicles by plate number, type,
+                or color. AI-powered re-identification tracks vehicles across multiple nodes.</p>
+            {% endif %}
+
+            <form method="POST" class="mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn-vt btn-vt-primary px-5">
+                    {% if step >= 4 %}Get Started{% else %}Next Step <i class="bi bi-arrow-right"></i>{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Training Datasets - VisionTrackAI{% endblock %}
+{% block page_title %}Training Datasets{% endblock %}
+{% block breadcrumb %}Home / AI Training / Datasets{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'ai_training:training_list' %}" class="btn-vt btn-vt-secondary"><i class="bi bi-list-task"></i> Training
+    Jobs</a>
+{% endblock %}
+
+{% block content %}
+<!-- Upload Section -->
+<div class="vt-card mb-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="dataset-upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+        <div>
+            <h6 class="mb-0" style="font-weight:600;">Upload Training Videos</h6>
+            <small class="text-muted">Upload bulk video files to create a training dataset</small>
+        </div>
+    </div>
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="vt-label">Dataset Name</label>
+                <input type="text" name="name" class="vt-input" placeholder="e.g. Traffic Dataset v2" required>
+            </div>
+            <div class="col-md-4">
+                <label class="vt-label">Model Architecture</label>
+                <select name="model_type" class="vt-select">
+                    <option value="YOLOv8">YOLOv8</option>
+                    <option value="YOLOv9">YOLOv9</option>
+                    <option value="YOLOv10">YOLOv10</option>
+                    <option value="SSD">SSD MobileNet</option>
+                    <option value="EfficientDet">EfficientDet</option>
+                    <option value="DETR">DETR</option>
+                    <option value="Custom">Custom Model</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="vt-label">Train/Test Split</label>
+                <select name="train_split" class="vt-select">
+                    <option value="0.8">80% / 20%</option>
+                    <option value="0.7">70% / 30%</option>
+                    <option value="0.9">90% / 10%</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="vt-label">Description</label>
+            <textarea name="description" class="vt-input" rows="2"
+                placeholder="Dataset description (optional)"></textarea>
+        </div>
+
+        <!-- Drop Zone -->
+        <div class="upload-dropzone" id="dropzone">
+            <i class="bi bi-camera-reels" style="font-size:40px;opacity:0.4;"></i>
+            <h6 style="margin-top:12px;">Drag & drop video files here</h6>
+            <p class="text-muted" style="font-size:13px;">or click to browse · MP4, AVI, MOV, MKV</p>
+            <input type="file" name="videos" id="videoInput" multiple accept="video/*" class="d-none">
+        </div>
+        <div id="fileList" class="mt-3"></div>
+
+        <div class="d-flex gap-3 mt-3">
+            <button type="submit" class="btn-vt btn-vt-primary" id="uploadBtn" disabled>
+                <i class="bi bi-cloud-arrow-up"></i> Upload & Create Dataset
+            </button>
+            <button type="button" class="btn-vt btn-vt-secondary" onclick="clearFiles()">
+                <i class="bi bi-x-lg"></i> Clear
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Existing Datasets -->
+<div class="vt-card">
+    <h6 class="mb-3"><i class="bi bi-collection-fill me-2"></i>All Datasets</h6>
+    {% if datasets %}
+    <table class="vt-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Model</th>
+                <th>Videos</th>
+                <th>Frames</th>
+                <th>Status</th>
+                <th>Accuracy</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ds in datasets %}
+            <tr>
+                <td style="font-weight:600;color:var(--text-primary);">{{ ds.name }}</td>
+                <td><span class="badge-status badge-online">{{ ds.model_type }}</span></td>
+                <td>{{ ds.total_videos }}</td>
+                <td>{{ ds.total_frames|default:"—" }}</td>
+                <td>
+                    <span
+                        class="badge-status badge-{% if ds.status == 'trained' %}online{% elif ds.status == 'ready' %}pending{% elif ds.status == 'failed' %}critical{% else %}warning{% endif %}">
+                        {{ ds.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if ds.accuracy %}
+                    <span style="color:var(--accent-green);font-weight:600;">{{ ds.accuracy|floatformat:1 }}%</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td class="text-muted">{{ ds.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <a href="{% url 'ai_training:dataset_detail' ds.pk %}" class="btn-vt btn-vt-secondary"
+                        style="padding:4px 12px;font-size:12px;">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-collection" style="font-size:36px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+        No datasets yet. Upload videos above to create your first dataset.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('videoInput');
+    const fileList = document.getElementById('fileList');
+    const uploadBtn = document.getElementById('uploadBtn');
+    let selectedFiles = [];
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+    function handleFiles(files) {
+        selectedFiles = Array.from(files);
+        renderFileList();
+        uploadBtn.disabled = selectedFiles.length === 0;
+    }
+
+    function renderFileList() {
+        if (selectedFiles.length === 0) { fileList.innerHTML = ''; return; }
+        let html = '<div class="upload-file-list">';
+        html += `<div class="text-muted mb-2" style="font-size:13px;"><strong>${selectedFiles.length}</strong> file(s) selected</div>`;
+        selectedFiles.forEach((f, i) => {
+            const size = f.size > 1e6 ? (f.size / 1e6).toFixed(1) + ' MB' : (f.size / 1e3).toFixed(0) + ' KB';
+            html += `<div class="upload-file-item">
+            <i class="bi bi-film" style="color:var(--accent-blue);"></i>
+            <span style="flex:1;">${f.name}</span>
+            <span class="text-muted" style="font-size:12px;">${size}</span>
+        </div>`;
+        });
+        html += '</div>';
+        fileList.innerHTML = html;
+    }
+
+    function clearFiles() {
+        selectedFiles = [];
+        fileInput.value = '';
+        renderFileList();
+        uploadBtn.disabled = true;
+    }
+</script>
+{% endblock %}

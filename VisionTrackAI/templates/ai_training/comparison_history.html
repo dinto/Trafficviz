@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Comparison History - VisionTrackAI{% endblock %}
+{% block page_title %}Comparison History{% endblock %}
+{% block breadcrumb %}Home / AI Studio / Comparison History{% endblock %}
+
+{% block content %}
+<div class="vt-card">
+    <table class="vt-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Jobs Compared</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in comparisons %}
+            <tr>
+                <td style="color:var(--text-primary);font-weight:500;">{{ c.title }}</td>
+                <td>
+                    {% for j in c.jobs.all %}<span class="badge-status badge-info me-1">{{ j.name }}</span>{% endfor %}
+                </td>
+                <td>{{ c.created_at|date:"M d, Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center py-5 text-muted">No saved comparisons.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

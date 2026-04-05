@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% block title %}User Management - VisionTrackAI{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block breadcrumb %}Home / Administration / User Management{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'accounts:access_request' %}" class="btn-vt btn-vt-primary"><i class="bi bi-plus-lg"></i> New Access
+    Request</a>
+{% endblock %}
+
+{% block content %}
+<!-- Description -->
+<p style="color:var(--text-muted);margin-bottom:24px;">Control system access levels and review new registration
+    requests.</p>
+
+<!-- Summary Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ total_users }}</div>
+            <div class="metric-label"><i class="bi bi-people me-1"></i>Total Users</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-green">{{ verified_users }}</div>
+            <div class="metric-label"><i class="bi bi-shield-check me-1"></i>Verified</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-amber">{{ pending_requests.count }}</div>
+            <div class="metric-label"><i class="bi bi-hourglass-split me-1"></i>Pending Approvals</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-blue">{{ role_counts.admin }}</div>
+            <div class="metric-label"><i class="bi bi-person-gear me-1"></i>Administrators</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- LEFT COLUMN -->
+    <div class="col-lg-8">
+        <!-- Pending Approvals -->
+        <div class="vt-card mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-clock-history" style="font-size:18px;color:var(--accent-amber);"></i>
+                <h6 class="mb-0">Pending Approvals</h6>
+                {% if pending_requests %}
+                <span class="badge rounded-pill" style="background:var(--accent-amber);color:#000;font-size:11px;">{{
+                    pending_requests.count }}</span>
+                {% endif %}
+            </div>
+            {% for req in pending_requests %}
+            <div
+                style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div
+                        style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:#fff;">
+                        {{ req.user.username|make_list|first|upper }}</div>
+                    <div>
+                        <div style="color:var(--text-primary);font-weight:500;">{{
+                            req.user.get_full_name|default:req.user.username }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ req.user.email|default:"No email" }}
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="badge-status badge-warning" style="font-size:11px;">{{ req.requested_role }}</span>
+                    <span style="font-size:11px;color:var(--text-muted);">{{ req.created_at|timesince }} ago</span>
+                    <form method="POST" action="{% url 'accounts:access_review' req.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approved">
+                        <button type="submit" class="btn btn-sm"
+                            style="background:rgba(34,197,94,0.15);color:var(--accent-green);border:0;border-radius:8px;padding:4px 12px;"><i
+                                class="bi bi-check-lg"></i> Approve</button>
+                    </form>
+                    <form method="POST" action="{% url 'accounts:access_review' req.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="rejected">
+                        <button type="submit" class="btn btn-sm"
+                            style="background:rgba(239,68,68,0.15);color:var(--accent-red);border:0;border-radius:8px;padding:4px 12px;"><i
+                                class="bi bi-x-lg"></i> Reject</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-4" style="color:var(--text-muted);">
+                <i class="bi bi-check-circle" style="font-size:32px;color:var(--accent-green);"></i>
+                <div class="mt-2">No pending approval requests.</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- User Directory -->
+        <div class="vt-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-lines-fill" style="font-size:18px;color:var(--accent-blue);"></i>
+                    <h6 class="mb-0">User Directory</h6>
+                </div>
+                <form method="GET" class="d-flex gap-2">
+                    <input type="text" name="search" class="vt-input" placeholder="Search users..." value="{{ search }}"
+                        style="width:180px;font-size:13px;">
+                    <select name="role" class="vt-select" style="width:auto;font-size:13px;">
+                        <option value="">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="operator">Operator</option>
+                        <option value="viewer">Viewer</option>
+                        <option value="analyst">Analyst</option>
+                    </select>
+                    <button type="submit" class="btn-vt btn-vt-primary"
+                        style="padding:6px 14px;font-size:13px;">Filter</button>
+                </form>
+            </div>
+            <table class="vt-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Organization</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div
+                                    style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#fff;">
+                                    {{ u.username|make_list|first|upper }}</div>
+                                <span style="color:var(--text-primary);font-weight:500;">{{
+                                    u.get_full_name|default:u.username }}</span>
+                            </div>
+                        </td>
+                        <td style="font-size:13px;">{{ u.email|default:"-" }}</td>
+                        <td>
+                            {% if u.profile.role == 'admin' %}
+                            <span class="badge-status badge-critical">Admin</span>
+                            {% elif u.profile.role == 'operator' %}
+                            <span class="badge-status badge-warning">Operator</span>
+                            {% elif u.profile.role == 'analyst' %}
+                            <span class="badge-status badge-info">Analyst</span>
+                            {% else %}
+                            <span class="badge-status badge-maintenance">Viewer</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:13px;">{{ u.profile.organization|default:"-" }}</td>
+                        <td>
+                            {% if u.profile.is_verified %}
+                            <span style="color:var(--accent-green);font-size:13px;"><i
+                                    class="bi bi-patch-check-fill"></i> Verified</span>
+                            {% else %}
+                            <span style="color:var(--text-muted);font-size:13px;"><i class="bi bi-clock"></i>
+                                Pending</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:12px;color:var(--text-muted);">{{ u.date_joined|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-lg-4">
+        <!-- Role Permissions -->
+        <div class="vt-card mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-key-fill" style="font-size:18px;color:var(--accent-purple);"></i>
+                <h6 class="mb-0">Role Permissions</h6>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Configure access by user category</p>
+
+            <!-- Admin -->
+            <div
+                style="padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-primary);font-weight:500;font-size:14px;"><i
+                            class="bi bi-shield-fill-check me-2"
+                            style="color:var(--accent-red);"></i>Administrator</span>
+                    <span class="badge rounded-pill"
+                        style="background:rgba(239,68,68,0.15);color:var(--accent-red);font-size:11px;">{{
+                        role_counts.admin }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Full system access, user management, configuration
+                </div>
+            </div>
+
+            <!-- Operator -->
+            <div
+                style="padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-primary);font-weight:500;font-size:14px;"><i
+                            class="bi bi-gear-fill me-2" style="color:var(--accent-amber);"></i>Operator</span>
+                    <span class="badge rounded-pill"
+                        style="background:rgba(245,158,11,0.15);color:var(--accent-amber);font-size:11px;">{{
+                        role_counts.operator }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Node management, monitoring, alert handling</div>
+            </div>
+
+            <!-- Analyst -->
+            <div
+                style="padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-primary);font-weight:500;font-size:14px;"><i
+                            class="bi bi-graph-up me-2" style="color:var(--accent-blue);"></i>Analyst</span>
+                    <span class="badge rounded-pill"
+                        style="background:rgba(59,130,246,0.15);color:var(--accent-blue);font-size:11px;">{{
+                        role_counts.analyst }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Analytics, reports, AI training, forensic search
+                </div>
+            </div>
+
+            <!-- Viewer -->
+            <div
+                style="padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-primary);font-weight:500;font-size:14px;"><i
+                            class="bi bi-eye-fill me-2" style="color:var(--accent-green);"></i>Viewer</span>
+                    <span class="badge rounded-pill"
+                        style="background:rgba(34,197,94,0.15);color:var(--accent-green);font-size:11px;">{{
+                        role_counts.viewer }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Read-only access to dashboard and reports</div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="vt-card">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-activity" style="font-size:18px;color:var(--accent-green);"></i>
+                <h6 class="mb-0">Recent Activity</h6>
+            </div>
+            {% for req in approved_requests %}
+            <div
+                style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-green);flex-shrink:0;"></div>
+                <div style="flex:1;min-width:0;">
+                    <div
+                        style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <strong>{{ req.user.username }}</strong> approved as {{ req.requested_role }}
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ req.reviewed_at|timesince }} ago</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% for req in rejected_requests %}
+            <div
+                style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-red);flex-shrink:0;"></div>
+                <div style="flex:1;min-width:0;">
+                    <div
+                        style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <strong>{{ req.user.username }}</strong> rejected for {{ req.requested_role }}
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ req.reviewed_at|timesince }} ago</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not approved_requests and not rejected_requests %}
+            <div class="text-center py-3" style="color:var(--text-muted);font-size:13px;">No recent activity.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

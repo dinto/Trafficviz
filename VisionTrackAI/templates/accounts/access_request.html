@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Request Access - VisionTrackAI{% endblock %}
+{% block page_title %}Request Access{% endblock %}
+{% block breadcrumb %}Home / Administration / Access Control / New Request{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="vt-card">
+            <h5 class="mb-4">Submit Access Request</h5>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label class="vt-label">Requested Role</label>
+                    <select name="role" class="vt-select">
+                        <option value="operator">Operator</option>
+                        <option value="analyst">Analyst</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="vt-label">Reason</label>
+                    <textarea name="reason" class="vt-input" rows="4"
+                        placeholder="Why do you need this access?"></textarea>
+                </div>
+                <button type="submit" class="btn-vt btn-vt-primary">Submit Request</button>
+                <a href="{% url 'accounts:access_management' %}" class="btn-vt btn-vt-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

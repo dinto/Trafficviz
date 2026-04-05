@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% block title %}{{ dataset.name }} - VisionTrackAI{% endblock %}
+{% block page_title %}{{ dataset.name }}{% endblock %}
+{% block breadcrumb %}Home / AI Training / Datasets / {{ dataset.name }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'ai_training:dataset_upload' %}" class="btn-vt btn-vt-secondary"><i class="bi bi-arrow-left"></i>
+    Back</a>
+{% if dataset.status == 'ready' %}
+<form method="POST" action="{% url 'ai_training:dataset_train' dataset.pk %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn-vt btn-vt-primary"><i class="bi bi-play-fill"></i> Train Model</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Dataset Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon blue"><i class="bi bi-film"></i></div>
+            <div class="metric-value">{{ dataset.total_videos }}</div>
+            <div class="metric-label">Videos</div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon purple"><i class="bi bi-images"></i></div>
+            <div class="metric-value">{{ dataset.total_frames }}</div>
+            <div class="metric-label">Total Frames</div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon green"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="metric-value">
+                {% if dataset.accuracy %}{{ dataset.accuracy|floatformat:1 }}%{% else %}—{% endif %}
+            </div>
+            <div class="metric-label">Accuracy</div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon amber"><i class="bi bi-crosshair"></i></div>
+            <div class="metric-value">
+                {% if dataset.precision_val %}{{ dataset.precision_val|floatformat:1 }}%{% else %}—{% endif %}
+            </div>
+            <div class="metric-label">Precision</div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon red"><i class="bi bi-bullseye"></i></div>
+            <div class="metric-value">
+                {% if dataset.recall_val %}{{ dataset.recall_val|floatformat:1 }}%{% else %}—{% endif %}
+            </div>
+            <div class="metric-label">Recall</div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4">
+        <div class="metric-card text-center">
+            <div class="metric-icon cyan">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+            <div class="metric-value">
+                {% if dataset.f1_score %}{{ dataset.f1_score|floatformat:1 }}%{% else %}—{% endif %}
+            </div>
+            <div class="metric-label">F1 Score</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Dataset Info -->
+    <div class="col-lg-4">
+        <div class="vt-card h-100">
+            <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Dataset Info</h6>
+            <div class="node-info-row">
+                <small class="text-muted">Status</small>
+                <span
+                    class="badge-status badge-{% if dataset.status == 'trained' %}online{% elif dataset.status == 'ready' %}pending{% elif dataset.status == 'failed' %}critical{% else %}warning{% endif %}">
+                    {{ dataset.get_status_display }}
+                </span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Model</small>
+                <span style="font-weight:600;color:var(--text-primary);">{{ dataset.model_type }}</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Train Split</small>
+                <span>{{ dataset.train_split|floatformat:0 }}%</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Test Split</small>
+                <span>{{ dataset.test_split|floatformat:0 }}%</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Created</small>
+                <span>{{ dataset.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            {% if dataset.description %}
+            <div style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
+                {{ dataset.description }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Videos Table -->
+    <div class="col-lg-8">
+        <div class="vt-card h-100">
+            <h6 class="mb-3"><i class="bi bi-film me-2"></i>Uploaded Videos ({{ videos|length }})</h6>
+            <table class="vt-table">
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Size</th>
+                        <th>Duration</th>
+                        <th>Frames</th>
+                        <th>Resolution</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in videos %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-film" style="color:var(--accent-blue);"></i>
+                                <span style="font-weight:500;color:var(--text-primary);">{{ v.filename }}</span>
+                            </div>
+                        </td>
+                        <td>{{ v.file_size_display }}</td>
+                        <td>{{ v.duration|floatformat:1 }}s</td>
+                        <td>{{ v.frame_count }}</td>
+                        <td><span class="badge-status badge-online">{{ v.resolution }}</span></td>
+                        <td>
+                            {% if v.is_processed %}
+                            <i class="bi bi-check-circle-fill text-green"></i>
+                            {% else %}
+                            <i class="bi bi-hourglass-split text-amber"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">No videos uploaded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if dataset.status == 'trained' %}
+<!-- Query Interface -->
+<div class="vt-card mb-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="dataset-upload-icon" style="background:rgba(168,85,247,0.12);color:var(--accent-purple);">
+            <i class="bi bi-search"></i>
+        </div>
+        <div>
+            <h6 class="mb-0" style="font-weight:600;">Query Trained Model</h6>
+            <small class="text-muted">Ask questions about your trained dataset — get AI-powered results</small>
+        </div>
+    </div>
+    <form method="POST" action="{% url 'ai_training:dataset_query' dataset.pk %}">
+        {% csrf_token %}
+        <div class="d-flex gap-3">
+            <input type="text" name="query" class="vt-input" style="flex:1;"
+                placeholder="e.g. How many vehicles detected? · Speed violations · License plates found · Traffic flow analysis"
+                required>
+            <button type="submit" class="btn-vt btn-vt-primary">
+                <i class="bi bi-send-fill"></i> Run Query
+            </button>
+        </div>
+        <div class="mt-2" style="font-size:11px;color:var(--text-muted);">
+            <i class="bi bi-lightbulb me-1"></i>
+            Try: <span class="query-hint" onclick="document.querySelector('[name=query]').value=this.textContent">how
+                many vehicles detected</span> ·
+            <span class="query-hint" onclick="document.querySelector('[name=query]').value=this.textContent">speed
+                violations</span> ·
+            <span class="query-hint" onclick="document.querySelector('[name=query]').value=this.textContent">license
+                plate numbers</span> ·
+            <span class="query-hint" onclick="document.querySelector('[name=query]').value=this.textContent">traffic
+                flow analysis</span> ·
+            <span class="query-hint" onclick="document.querySelector('[name=query]').value=this.textContent">pedestrian
+                count</span>
+        </div>
+    </form>
+</div>
+
+<!-- Query Results -->
+{% if queries %}
+<div class="vt-card">
+    <h6 class="mb-3"><i class="bi bi-chat-dots-fill me-2"></i>Query History</h6>
+    {% for q in queries %}
+    <div class="query-result-card">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <div style="font-weight:600;color:var(--text-primary);font-size:14px;">
+                    <i class="bi bi-chat-left-text me-1" style="color:var(--accent-purple);"></i>
+                    {{ q.query_text }}
+                </div>
+                <small class="text-muted">{{ q.created_at|date:"M d, Y H:i:s" }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge-status badge-online">{{ q.confidence|floatformat:0 }}% conf.</span>
+                <span class="badge-status badge-pending">{{ q.processing_time }}s</span>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        {% if q.result_json.summary %}
+        <div class="query-summary">
+            <i class="bi bi-robot me-2"></i>{{ q.result_json.summary }}
+        </div>
+        {% endif %}
+
+        <!-- Detailed results -->
+        {% if q.result_json.detections %}
+        <div class="query-details mt-2">
+            <table class="vt-table" style="font-size:12px;">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Count</th>
+                        <th>Avg Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for det in q.result_json.detections %}
+                    <tr>
+                        <td style="font-weight:500;">{{ det.type }}</td>
+                        <td>{{ det.count }}</td>
+                        <td>{{ det.avg_confidence|floatformat:0 }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if q.result_json.speed_analysis %}
+        <div class="query-details mt-2">
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Avg Speed</span><strong>{{
+                            q.result_json.speed_analysis.avg_speed_kmh }} km/h</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Max Speed</span><strong>{{
+                            q.result_json.speed_analysis.max_speed_kmh }} km/h</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Violations</span><strong
+                            style="color:var(--accent-red);">{{ q.result_json.speed_analysis.violations }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if q.result_json.plates_detected %}
+        <div class="query-details mt-2">
+            <div class="d-flex flex-wrap gap-2">
+                {% for plate in q.result_json.plates_detected %}
+                <span class="plate-text">{{ plate }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if q.result_json.traffic_flow %}
+        <div class="query-details mt-2">
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Density</span><strong>{{
+                            q.result_json.traffic_flow.avg_density|floatformat:0 }}%</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Peak Hour</span><strong>{{
+                            q.result_json.traffic_flow.peak_hour }}</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Flow Rate</span><strong>{{
+                            q.result_json.traffic_flow.flow_rate|floatformat:0 }}/hr</strong></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if q.result_json.pedestrian_analysis %}
+        <div class="query-details mt-2">
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Total</span><strong>{{
+                            q.result_json.pedestrian_analysis.total_detected }}</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Jaywalking</span><strong
+                            style="color:var(--accent-red);">{{ q.result_json.pedestrian_analysis.jaywalking }}</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Crosswalk Use</span><strong>{{
+                            q.result_json.pedestrian_analysis.crosswalk_usage|floatformat:0 }}%</strong></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if q.result_json.general_analysis %}
+        <div class="query-details mt-2">
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Objects</span><strong>{{
+                            q.result_json.general_analysis.objects_detected }}</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Classes</span><strong>{{
+                            q.result_json.general_analysis.unique_classes }}</strong></div>
+                </div>
+                <div class="col-4">
+                    <div class="mini-stat"><span class="text-muted">Frames</span><strong>{{
+                            q.result_json.general_analysis.frames_analyzed|default:"0" }}</strong></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

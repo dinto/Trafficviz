@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Geospatial Map - VisionTrackAI{% endblock %}
+{% block page_title %}Geospatial Tracking Map{% endblock %}
+{% block breadcrumb %}Home / Monitoring / Geospatial Map{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    #map {
+        height: 550px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+
+    .leaflet-control-zoom a {
+        background: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-color) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-9">
+        <div class="vt-card p-0" style="overflow:hidden;">
+            <div id="map"></div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="vt-card">
+            <h6 class="mb-3">Recent Detections</h6>
+            {% for d in detections|slice:":10" %}
+            <div class="d-flex gap-2 py-2" style="border-bottom:1px solid var(--border-color);">
+                <div>
+                    {% if d.vehicle.is_flagged %}<i class="bi bi-flag-fill text-red"></i>{% else %}<i
+                        class="bi bi-car-front text-blue"></i>{% endif %}
+                </div>
+                <div>
+                    <div style="font-weight:500;font-size:13px;color:var(--text-primary);font-family:monospace;">{{
+                        d.vehicle.plate_number }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ d.node_name }} · {{ d.detected_at|timesince
+                        }} ago</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No detections.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([9.95, 76.32], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '©OpenStreetMap, ©CARTO', maxZoom: 19
+    }).addTo(map);
+
+    var points = {{ points| safe }};
+    points.forEach(function (p) {
+        var color = p.flagged ? '#EF4444' : '#22C55E';
+        var circle = L.circleMarker([p.lat, p.lng], {
+            radius: 7, fillColor: color, color: color, weight: 1, opacity: 0.8, fillOpacity: 0.6
+        }).addTo(map);
+        circle.bindPopup('<b>' + p.plate + '</b><br>Node: ' + p.node + '<br>Time: ' + p.time);
+    });
+    if (points.length > 0) {
+        var bounds = points.map(function (p) { return [p.lat, p.lng]; });
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+</script>
+{% endblock %}

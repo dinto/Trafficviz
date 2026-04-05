@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}My Profile - VisionTrackAI{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block breadcrumb %}Home / Profile{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="vt-card text-center mb-4">
+            <div class="profile-avatar-large">
+                {{ request.user.username|make_list|first|upper }}
+            </div>
+            <h5 style="font-weight:600;margin-top:16px;">
+                {% if request.user.first_name %}
+                {{ request.user.first_name }} {{ request.user.last_name }}
+                {% else %}
+                {{ request.user.username }}
+                {% endif %}
+            </h5>
+            <div class="text-muted" style="font-size:13px;">@{{ request.user.username }}</div>
+            <div style="margin-top:10px;">
+                <span class="badge-status badge-{{ profile.role }}">{{ profile.get_role_display }}</span>
+                {% if profile.is_verified %}
+                <span class="badge-status badge-online" style="margin-left:6px;">
+                    <i class="bi bi-patch-check-fill"></i> Verified
+                </span>
+                {% else %}
+                <span class="badge-status badge-warning" style="margin-left:6px;">
+                    <i class="bi bi-exclamation-circle"></i> Unverified
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="vt-card mb-4">
+            <h6 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Account Overview</h6>
+            <div class="node-info-row">
+                <small class="text-muted">Member Since</small>
+                <span>{{ request.user.date_joined|date:"M d, Y" }}</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Documents</small>
+                <span class="detection-count">{{ docs_count }}</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Organization</small>
+                <span>{{ profile.organization|default:"—" }}</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Phone</small>
+                <span>{{ profile.phone|default:"—" }}</span>
+            </div>
+            <div class="node-info-row">
+                <small class="text-muted">Email</small>
+                <span style="font-size:12px;">{{ request.user.email|default:"—" }}</span>
+            </div>
+        </div>
+
+        <!-- Access Requests -->
+        <div class="vt-card">
+            <h6 class="mb-3"><i class="bi bi-key me-2"></i>Access Requests</h6>
+            {% for ar in access_requests %}
+            <div class="node-info-row">
+                <div>
+                    <small style="font-weight:500;color:var(--text-primary);">{{ ar.requested_role|title }}</small>
+                    <br><small class="text-muted">{{ ar.created_at|date:"M d, Y" }}</small>
+                </div>
+                <span class="badge-status badge-{{ ar.status }}">{{ ar.get_status_display }}</span>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-3" style="font-size:13px;">
+                <i class="bi bi-inbox" style="font-size:24px;opacity:0.3;display:block;margin-bottom:6px;"></i>
+                No access requests yet
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Edit Profile Form -->
+    <div class="col-lg-8">
+        <div class="vt-card">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="profile-edit-icon"><i class="bi bi-pencil-square"></i></div>
+                <div>
+                    <h6 class="mb-0" style="font-weight:600;">Edit Profile</h6>
+                    <small class="text-muted">Update your personal information</small>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="vt-label">First Name</label>
+                        <input type="text" name="first_name" class="vt-input" value="{{ request.user.first_name }}"
+                            placeholder="Enter first name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Last Name</label>
+                        <input type="text" name="last_name" class="vt-input" value="{{ request.user.last_name }}"
+                            placeholder="Enter last name">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="vt-label">Email</label>
+                        <input type="email" name="email" class="vt-input" value="{{ request.user.email }}"
+                            placeholder="Enter email address">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Phone</label>
+                        <input type="text" name="phone" class="vt-input" value="{{ profile.phone }}"
+                            placeholder="Enter phone number">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="vt-label">Organization</label>
+                        <input type="text" name="organization" class="vt-input" value="{{ profile.organization }}"
+                            placeholder="Enter organization">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Avatar</label>
+                        <input type="file" name="avatar" class="vt-input" accept="image/*" style="padding:8px 14px;">
+                    </div>
+                </div>
+
+                <!-- Read-only fields -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="vt-label">Username</label>
+                        <input type="text" class="vt-input" value="{{ request.user.username }}" disabled
+                            style="opacity:0.5;">
+                        <small class="text-muted" style="font-size:11px;">Username cannot be changed</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Role</label>
+                        <input type="text" class="vt-input" value="{{ profile.get_role_display }}" disabled
+                            style="opacity:0.5;">
+                        <small class="text-muted" style="font-size:11px;">Contact admin to change role</small>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn-vt btn-vt-primary"><i class="bi bi-check-lg"></i> Save
+                        Changes</button>
+                    <a href="{% url 'accounts:profile' %}" class="btn-vt btn-vt-secondary"><i class="bi bi-x-lg"></i>
+                        Cancel</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Section -->
+        <div class="vt-card mt-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="profile-edit-icon" style="background:rgba(239,68,68,0.12);color:var(--accent-red);">
+                    <i class="bi bi-shield-lock"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0" style="font-weight:600;">Security</h6>
+                    <small class="text-muted">Account security and verification</small>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="metric-card text-center">
+                        <div class="metric-icon {% if profile.is_verified %}green{% else %}amber{% endif %}"
+                            style="margin:0 auto 12px;">
+                            <i
+                                class="bi bi-{% if profile.is_verified %}patch-check-fill{% else %}exclamation-circle{% endif %}"></i>
+                        </div>
+                        <div class="metric-label">Verification</div>
+                        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-top:4px;">
+                            {% if profile.is_verified %}Verified{% else %}Pending{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card text-center">
+                        <div class="metric-icon blue" style="margin:0 auto 12px;">
+                            <i class="bi bi-key-fill"></i>
+                        </div>
+                        <div class="metric-label">Role</div>
+                        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-top:4px;">
+                            {{ profile.get_role_display }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card text-center">
+                        <div class="metric-icon purple" style="margin:0 auto 12px;">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </div>
+                        <div class="metric-label">Documents</div>
+                        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-top:4px;">
+                            {{ docs_count }} uploaded
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

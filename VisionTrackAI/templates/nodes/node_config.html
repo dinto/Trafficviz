@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Configure {{ node.name }} - VisionTrackAI{% endblock %}
+{% block page_title %}Configure: {{ node.name }}{% endblock %}
+{% block breadcrumb %}Home / Nodes / {{ node.name }} / Configuration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="vt-card">
+            <h6 class="mb-4">Remote Configuration</h6>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="vt-label">Detection Sensitivity</label>
+                        <input type="number" name="detection_sensitivity" class="vt-input"
+                            value="{{ config.detection_sensitivity }}" step="0.1" min="0" max="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Frame Rate (FPS)</label>
+                        <input type="number" name="frame_rate" class="vt-input" value="{{ config.frame_rate }}" min="1"
+                            max="120">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Resolution</label>
+                        <select name="resolution" class="vt-select">
+                            <option value="480p">480p</option>
+                            <option value="720p">720p</option>
+                            <option value="1080p">1080p</option>
+                            <option value="4K">4K</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">AI Model</label>
+                        <select name="ai_model" class="vt-select">
+                            <option value="YOLOv8">YOLOv8</option>
+                            <option value="YOLOv9">YOLOv9</option>
+                            <option value="EfficientDet">EfficientDet</option>
+                            <option value="SSD">SSD</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="vt-label">Alert Threshold</label>
+                        <input type="number" name="alert_threshold" class="vt-input"
+                            value="{{ config.alert_threshold }}" step="0.1" min="0" max="1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="vt-label">Recording</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="recording_enabled" {% if config.recording_enabled %}checked{% endif %}>
+                            <label class="form-check-label text-secondary">Enabled</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="vt-label">Auto Restart</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="auto_restart" {% if config.auto_restart %}checked{% endif %}>
+                            <label class="form-check-label text-secondary">Enabled</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn-vt btn-vt-primary">Save Configuration</button>
+                    <a href="{% url 'nodes:node_detail' node.pk %}" class="btn-vt btn-vt-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

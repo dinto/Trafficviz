@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block title %}Vehicle Search - VisionTrackAI{% endblock %}
+{% block page_title %}Vehicle Search & Re-ID{% endblock %}
+{% block breadcrumb %}Home / Monitoring / Vehicle Search{% endblock %}
+
+{% block content %}
+<div class="vt-card mb-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="vehicle-search-icon">
+            <i class="bi bi-search"></i>
+        </div>
+        <div>
+            <h6 class="mb-0" style="font-weight:600;">Search Vehicles</h6>
+            <small class="text-muted">Search by plate number, type, or flagged status</small>
+        </div>
+    </div>
+    <form method="GET" class="d-flex gap-3 align-items-end flex-wrap">
+        <div style="flex:1;min-width:200px;">
+            <label class="vt-label">Search Plate</label>
+            <input type="text" name="search" class="vt-input" placeholder="Enter plate number..." value="{{ search }}">
+        </div>
+        <div>
+            <label class="vt-label">Type</label>
+            <select name="type" class="vt-select">
+                <option value="">All Types</option>
+                <option value="car">Car</option>
+                <option value="truck">Truck</option>
+                <option value="bus">Bus</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="suv">SUV</option>
+                <option value="van">Van</option>
+            </select>
+        </div>
+        <div>
+            <label class="vt-label">Flagged Only</label>
+            <select name="flagged" class="vt-select">
+                <option value="">All</option>
+                <option value="true">Flagged</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-vt btn-vt-primary"><i class="bi bi-search"></i> Search</button>
+        <a href="{% url 'vehicles:vehicle_search' %}" class="btn-vt btn-vt-secondary"><i class="bi bi-x-circle"></i>
+            Clear</a>
+    </form>
+</div>
+
+<!-- Results count -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-secondary" style="font-size:14px;">
+        <i class="bi bi-car-front-fill me-1"></i>
+        <strong style="color:var(--text-primary);">{{ vehicles|length }}</strong> vehicle{{ vehicles|length|pluralize }}
+        found
+    </span>
+</div>
+
+<div class="vt-card">
+    <table class="vt-table">
+        <thead>
+            <tr>
+                <th>Vehicle</th>
+                <th>Plate</th>
+                <th>Color</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th>Detections</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vehicles %}
+            <tr class="vehicle-row">
+                <td>
+                    <div class="vehicle-identity">
+                        <div class="vehicle-logo" data-make="{{ v.make|lower }}">
+                            <!-- Logo rendered by JS based on make -->
+                        </div>
+                        <div>
+                            <div class="vehicle-make-model">{{ v.make }} {{ v.model }}</div>
+                            <div class="vehicle-type-badge">
+                                {% if v.vehicle_type == 'car' %}
+                                <i class="bi bi-car-front-fill"></i>
+                                {% elif v.vehicle_type == 'truck' %}
+                                <i class="bi bi-truck"></i>
+                                {% elif v.vehicle_type == 'bus' %}
+                                <i class="bi bi-bus-front-fill"></i>
+                                {% elif v.vehicle_type == 'motorcycle' %}
+                                <i class="bi bi-bicycle"></i>
+                                {% elif v.vehicle_type == 'suv' %}
+                                <i class="bi bi-truck-front-fill"></i>
+                                {% elif v.vehicle_type == 'van' %}
+                                <i class="bi bi-truck-front"></i>
+                                {% else %}
+                                <i class="bi bi-car-front"></i>
+                                {% endif %}
+                                {{ v.vehicle_type|title|default:"Unknown" }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="plate-display">
+                        <span class="plate-text">{{ v.plate_number }}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="color-swatch" data-color="{{ v.color|lower }}"></span>
+                        {{ v.color|title|default:"-" }}
+                    </div>
+                </td>
+                <td>{{ v.owner|default:"-" }}</td>
+                <td>
+                    {% if v.is_flagged %}
+                    <span class="badge-status badge-critical"><i class="bi bi-flag-fill"></i> Flagged</span>
+                    {% else %}
+                    <span class="badge-status badge-online">Clear</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="detection-count">{{ v.detections.count }}</span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <i class="bi bi-car-front" style="font-size:36px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+                    No vehicles found. Try adjusting your search filters.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Vehicle brand logo mapping (SVG text-based logos)
+    const brandLogos = {
+        'toyota': { text: 'T', color: '#EB0A1E', bg: 'rgba(235,10,30,0.12)' },
+        'honda': { text: 'H', color: '#CC0000', bg: 'rgba(204,0,0,0.12)' },
+        'ford': { text: 'F', color: '#003478', bg: 'rgba(0,52,120,0.15)' },
+        'chevrolet': { text: 'C', color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' },
+        'bmw': { text: 'B', color: '#0066B1', bg: 'rgba(0,102,177,0.15)' },
+        'mercedes': { text: 'M', color: '#A0A0A0', bg: 'rgba(160,160,160,0.12)' },
+        'mercedes-benz': { text: 'MB', color: '#A0A0A0', bg: 'rgba(160,160,160,0.12)' },
+        'audi': { text: 'A', color: '#BB0A30', bg: 'rgba(187,10,48,0.12)' },
+        'tesla': { text: 'T', color: '#CC0000', bg: 'rgba(204,0,0,0.12)' },
+        'hyundai': { text: 'H', color: '#002C5F', bg: 'rgba(0,44,95,0.15)' },
+        'kia': { text: 'K', color: '#BB162B', bg: 'rgba(187,22,43,0.12)' },
+        'nissan': { text: 'N', color: '#C3002F', bg: 'rgba(195,0,47,0.12)' },
+        'volkswagen': { text: 'VW', color: '#151F5B', bg: 'rgba(21,31,91,0.15)' },
+        'vw': { text: 'VW', color: '#151F5B', bg: 'rgba(21,31,91,0.15)' },
+        'subaru': { text: 'S', color: '#013B7C', bg: 'rgba(1,59,124,0.15)' },
+        'mazda': { text: 'M', color: '#960023', bg: 'rgba(150,0,35,0.12)' },
+        'lexus': { text: 'L', color: '#1A1A1A', bg: 'rgba(26,26,26,0.15)' },
+        'jeep': { text: 'J', color: '#2B5219', bg: 'rgba(43,82,25,0.15)' },
+        'porsche': { text: 'P', color: '#A51C30', bg: 'rgba(165,28,48,0.12)' },
+        'volvo': { text: 'V', color: '#003057', bg: 'rgba(0,48,87,0.15)' },
+        'suzuki': { text: 'S', color: '#001F5B', bg: 'rgba(0,31,91,0.15)' },
+        'tata': { text: 'T', color: '#004B87', bg: 'rgba(0,75,135,0.15)' },
+        'mahindra': { text: 'M', color: '#D71920', bg: 'rgba(215,25,32,0.12)' },
+        'maruti': { text: 'S', color: '#001F5B', bg: 'rgba(0,31,91,0.15)' },
+    };
+    const defaultBrand = { text: '?', color: '#64748B', bg: 'rgba(100,116,139,0.12)' };
+
+    document.querySelectorAll('.vehicle-logo').forEach(el => {
+        const make = el.dataset.make;
+        const brand = brandLogos[make] || defaultBrand;
+        el.textContent = brand.text;
+        el.style.color = brand.color;
+        el.style.background = brand.bg;
+    });
+
+    // Color swatch mapping
+    const colorMap = {
+        'red': '#EF4444', 'blue': '#3B82F6', 'green': '#22C55E',
+        'black': '#1E293B', 'white': '#F1F5F9', 'silver': '#94A3B8',
+        'grey': '#64748B', 'gray': '#64748B', 'yellow': '#F59E0B',
+        'orange': '#F97316', 'brown': '#92400E', 'gold': '#D4AF37',
+        'beige': '#D2B48C', 'maroon': '#800000', 'navy': '#001F3F',
+        'purple': '#8B5CF6', 'pink': '#EC4899',
+    };
+    document.querySelectorAll('.color-swatch').forEach(el => {
+        const color = el.dataset.color;
+        el.style.background = colorMap[color] || '#64748B';
+    });
+</script>
+{% endblock %}

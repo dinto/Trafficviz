@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Edge Nodes - VisionTrackAI{% endblock %}
+{% block page_title %}Edge Node Management{% endblock %}
+{% block breadcrumb %}Home / Monitoring / Edge Nodes{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ total }}</div>
+            <div class="metric-label">Total Nodes</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-green">{{ online }}</div>
+            <div class="metric-label"><span class="status-dot online"></span>Online</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-red">{{ offline }}</div>
+            <div class="metric-label"><span class="status-dot offline"></span>Offline</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-amber">{{ error }}</div>
+            <div class="metric-label"><span class="status-dot error"></span>Error</div>
+        </div>
+    </div>
+</div>
+
+<div class="vt-card mb-4">
+    <form method="GET" class="d-flex gap-3 align-items-end">
+        <div style="flex:1;">
+            <label class="vt-label">Search</label>
+            <input type="text" name="search" class="vt-input" placeholder="Search nodes..."
+                value="{{ request.GET.search }}">
+        </div>
+        <div>
+            <label class="vt-label">Status</label>
+            <select name="status" class="vt-select">
+                <option value="">All</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="error">Error</option>
+                <option value="maintenance">Maintenance</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-vt btn-vt-primary">Filter</button>
+        <a href="{% url 'nodes:node_list' %}" class="btn-vt btn-vt-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="vt-card">
+    <table class="vt-table">
+        <thead>
+            <tr>
+                <th>Node</th>
+                <th>ID</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>CPU</th>
+                <th>Memory</th>
+                <th>Temp</th>
+                <th>Uptime</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for node in nodes %}
+            <tr>
+                <td style="color:var(--text-primary);font-weight:500;">
+                    <span class="status-dot {{ node.status }}"></span>{{ node.name }}
+                </td>
+                <td style="font-family:monospace;font-size:12px;">{{ node.node_id }}</td>
+                <td>{{ node.location }}</td>
+                <td><span class="badge-status badge-{{ node.status }}">{{ node.get_status_display }}</span></td>
+                <td>
+                    <small>{{ node.cpu_usage }}%</small>
+                </td>
+                <td>
+                    <small>{{ node.memory_usage }}%</small>
+                </td>
+                <td>{{ node.temperature }}°C</td>
+                <td>{{ node.uptime_hours|floatformat:0 }}h</td>
+                <td>
+                    <a href="{% url 'nodes:node_detail' node.pk %}" class="btn btn-sm"
+                        style="background:rgba(59,130,246,0.15);color:var(--accent-blue);border:0;"><i
+                            class="bi bi-eye"></i></a>
+                    <a href="{% url 'nodes:node_config' node.pk %}" class="btn btn-sm"
+                        style="background:rgba(139,92,246,0.15);color:var(--accent-purple);border:0;"><i
+                            class="bi bi-gear"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center py-5 text-muted">No edge nodes configured. Add nodes via Admin.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

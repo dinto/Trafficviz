@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}AI Training - VisionTrackAI{% endblock %}
+{% block page_title %}AI Training Studio{% endblock %}
+{% block breadcrumb %}Home / AI Studio / Training Jobs{% endblock %}
+
+{% block content %}
+<div class="vt-card mb-4">
+    <h6 class="mb-3">New Training Job</h6>
+    <form method="POST" class="d-flex gap-3 align-items-end flex-wrap">
+        {% csrf_token %}
+        <div style="flex:1;min-width:180px;">
+            <label class="vt-label">Job Name</label>
+            <input type="text" name="name" class="vt-input" placeholder="e.g. Vehicle Detection v3" required>
+        </div>
+        <div>
+            <label class="vt-label">Model</label>
+            <select name="model_type" class="vt-select">
+                <option value="YOLOv8">YOLOv8</option>
+                <option value="YOLOv9">YOLOv9</option>
+                <option value="EfficientDet">EfficientDet</option>
+                <option value="ResNet50">ResNet50</option>
+            </select>
+        </div>
+        <div>
+            <label class="vt-label">Dataset</label>
+            <input type="text" name="dataset" class="vt-input" placeholder="Dataset name" style="width:160px;">
+        </div>
+        <div>
+            <label class="vt-label">Epochs</label>
+            <input type="number" name="epochs" class="vt-input" value="100" min="1" style="width:100px;">
+        </div>
+        <button type="submit" class="btn-vt btn-vt-primary"><i class="bi bi-play-fill"></i> Create</button>
+    </form>
+</div>
+
+<div class="vt-card">
+    <h6 class="mb-3">Training Jobs</h6>
+    <table class="vt-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Model</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Accuracy</th>
+                <th>Loss</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td style="color:var(--text-primary);font-weight:500;">{{ job.name }}</td>
+                <td><span class="badge-status badge-info">{{ job.model_type }}</span></td>
+                <td>
+                    {% if job.status == 'completed' %}
+                    <span class="badge-status badge-online">Completed</span>
+                    {% elif job.status == 'running' %}
+                    <span class="badge-status badge-warning">Running</span>
+                    {% elif job.status == 'failed' %}
+                    <span class="badge-status badge-critical">Failed</span>
+                    {% else %}
+                    <span class="badge-status badge-maintenance">{{ job.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="vt-progress" style="width:80px;">
+                            <div class="vt-progress-bar blue" style="width:{{ job.progress }}%"></div>
+                        </div>
+                        <small>{{ job.progress }}%</small>
+                    </div>
+                </td>
+                <td>{{ job.accuracy|floatformat:2 }}%</td>
+                <td>{{ job.loss|floatformat:4 }}</td>
+                <td>{{ job.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <a href="{% url 'ai_training:training_logs' job.pk %}" class="btn btn-sm"
+                        style="background:rgba(59,130,246,0.15);color:var(--accent-blue);border:0;"><i
+                            class="bi bi-terminal"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">No training jobs. Create one above.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
